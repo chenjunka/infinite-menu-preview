@@ -1,8 +1,23 @@
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import InfiniteMenu from './components/InfiniteMenu/InfiniteMenu';
 import { fetchInfiniteMenuProducts } from './data/zionProducts';
 
-export default function App() {
+const ProductDetail = lazy(() => import('./components/ProductDetail/ProductDetail'));
+
+function readProductId() {
+  const value = Number(new URLSearchParams(window.location.search).get('productId'));
+  return Number.isInteger(value) && value > 0 ? value : null;
+}
+
+function navigateToProduct(productId) {
+  const url = new URL(window.location.href);
+  if (productId === null) url.searchParams.delete('productId');
+  else url.searchParams.set('productId', String(productId));
+  window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`);
+  window.dispatchEvent(new PopStateEvent('popstate'));
+}
+
+function MenuPage() {
   const [products, setProducts] = useState([]);
   const [status, setStatus] = useState('loading');
   const [requestVersion, setRequestVersion] = useState(0);
@@ -47,7 +62,31 @@ export default function App() {
 
   return (
     <main className="menu-screen">
-      <InfiniteMenu items={products} scale={3} />
+      <InfiniteMenu
+        items={products}
+        scale={3}
+        onItemClick={item => item && navigateToProduct(item.id)}
+      />
     </main>
   );
+}
+
+export default function App() {
+  const [productId, setProductId] = useState(readProductId);
+
+  useEffect(() => {
+    const updateRoute = () => setProductId(readProductId());
+    window.addEventListener('popstate', updateRoute);
+    return () => window.removeEventListener('popstate', updateRoute);
+  }, []);
+
+  if (productId !== null) {
+    return (
+      <Suspense fallback={<main className="status-screen">正在打开产品详情</main>}>
+        <ProductDetail productId={productId} onBack={() => navigateToProduct(null)} />
+      </Suspense>
+    );
+  }
+
+  return <MenuPage />;
 }

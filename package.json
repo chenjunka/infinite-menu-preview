@@ -12,8 +12,10 @@
   "dependencies": {
     "@vitejs/plugin-react": "latest",
     "gl-matrix": "^3.4.4",
+    "lucide-react": "^1.28.0",
     "react": "latest",
     "react-dom": "latest",
+    "three": "^0.185.1",
     "vite": "latest"
   }
 }
